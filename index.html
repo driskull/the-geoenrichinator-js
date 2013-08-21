@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>The Geoenrichinator</title>
+<meta charset="utf-8">
+<!--Define the versions of IE that will be used to render the page. See Microsoft documentation for details. Optional.-->
+<meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1" />
+<!--Use protocol relative urls that way if the browser is viewing the page via HTTPS the js/css file will be requested using the HTTPS protocol-->
+<link rel="stylesheet" href="//js.arcgis.com/3.6/js/dojo/dijit/themes/claro/claro.css">
+<link rel="stylesheet" type="text/css" href="//js.arcgis.com/3.6/js/esri/css/esri.css">
+<!--Load any application specific styles-->
+<link rel="stylesheet" type="text/css" href="css/main.css">
+<link rel="stylesheet" type="text/css" href="css/ui-progress-bar.css">
+<link href='http://fonts.googleapis.com/css?family=Yanone+Kaffeesatz:700' rel='stylesheet' type='text/css'>
+<!--[if gte IE 9]>
+<style type="text/css">
+.gradient {
+filter: none;
+}
+</style>
+<![endif]-->
+</head>
+<body class="claro">
+    <div id="bc">
+        <div id="cptop" class="gradient">
+            <div class="logo"></div>
+            <h1>The Geoenrichinator</h1>
+        </div>
+        <div id="cpright">
+            <div id="serviceResult" class="serviceResult"></div>
+            <div id="layerOptions" class="layerOptions"></div>
+        </div>
+        <div id="cpcenter">
+            <div class="login">
+                <div class="loginCon">
+                    <p>
+                        <label for="form_portal">Portal:</label>
+                        <input type="text" name="portal" id="form_portal" value="">
+                    </p>
+                    <p>
+                        <label for="form_webmap">Webmap:</label>
+                        <input type="text" name="webmap" id="form_webmap" value="">
+                    </p>
+                    <div id="start" class="submit bigButton">Go!</div>
+                    <div class="clear"></div>
+                </div>
+                <div class="helpCon">
+                    <h2>Help!</h2>
+                    <ol>
+                        <li>Create a webmap containing a feature layer with at least one polygon to enrich. <span class="attention">(Include the full URL to the layer ID)</span></li>
+                        <li>Enter the address of your portal and webmap ID, and hit &quot;<span class="named">Go!</span>&quot;</li>
+                        <li>Select the impact layer, enter your desired <span class="attention">unique</span> service name, and select &quot;<span class="named">Feed Me!</span>&quot;</li>
+                        <li>Once completed, select &quot;<span class="named">Open in ArcGIS</span>&quot;, style your webmap, and share it publicly.</li>
+                        <li>Add the webmap ID to the URL of the LIM. (tmappsevents.esri.com/website/LIM?webmap=<span class="attention">&lt;webmap ID&gt;</span>)</li>                  
+                    </ol>
+                </div>                
+            </div>
+           <!--The ArcGIS API for JavaScript provides bidirectional support.  When viewing the application in an right to left (rtl) language like Hebrew and Arabic the map needs to remain in left-to-right (ltr) mode. Specify this by setting the dir attribute on the div to ltr. --> 
+           <div id="mapDiv" dir="ltr">
+               <div id="progress">
+                    <div class="ui-progress-bar ui-container transition" id="progress_bar">
+                        <div id="progressWidth" class="ui-progress" style="width: 1%;">
+                            <span class="ui-label" id="progress_label"></span>
+                        </div>
+                    </div>
+               </div>
+           </div>
+        </div>
+    </div>
+    <script type="text/javascript">
+	        var dojoConfig = {
+	            packages:[
+	            { 
+	                name: "application",
+	                location: location.pathname.replace(/\/[^/]+$/, '') + '/js' 
+	             },{
+                    name: "config",
+                    location: location.pathname.replace(/\/[^/]+$/, '') + '/config'                     
+                 }
+	            ]
+	        };
+    </script>
+    <script type="text/javascript" src="//js.arcgis.com/3.6/"></script>
+    <script type="text/javascript">
+        require([
+            "dojo/on",
+            "application/main",
+            "application/template",
+            "dojo/domReady!"
+        ], function(
+            on,
+            Main,
+            Template
+        ){
+        var supportsLocalization = true;
+        var myTemplate = new Template(supportsLocalization);
+        on(myTemplate, "ready", function(config){
+            Main(config);
+            });
+        });
+    </script>
+</body>
+</html>
