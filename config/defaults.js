@@ -23,7 +23,7 @@ define([], function() {
         //color theme.  
         "theme": "", 
         "bingmapskey": "", //Enter the url to your organizations bing maps key if you want to use bing basemaps
-        "sharinghost": location.protocol + "//" + "tmapps.maps.arcgis.com" //Defaults to arcgis.com. Set this value to your portal or organization host name. 
+        "sharinghost": location.protocol + "//" + "disasterresponse.maps.arcgis.com" //Defaults to arcgis.com. Set this value to your portal or organization host name. 
     };
     return defaults;
 });

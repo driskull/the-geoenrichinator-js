@@ -94,6 +94,27 @@ function(
         _slug: function(Text) {
             return Text.toLowerCase().replace(/[^\w ]+/g,'').replace(/ +/g,'_');
         },
+        _shareItem: function(itemId){
+            var user = this._portal.getPortalUser();
+            var token = user.credential.token;
+            var url = 'https://www.arcgis.com/sharing/rest/content/users/' + user.username + '/items/' + itemId + '/share';
+            // make request
+            return esriRequest({
+                url: url,
+                timeout: 2400000,
+                content: {
+                    "everyone": true,
+                    "org": true,
+                    "groups":"",
+                    "f": "json",
+                    "token": token
+                },
+                handleAs: "json",
+                callbackParamName: "callback"
+            }, {
+                usePost: true
+            });
+        },
         _createService: function() {
             var user = this._portal.getPortalUser();
             var token = user.credential.token;
@@ -209,8 +230,8 @@ function(
         },
         _addToken: function(ioArgs) {
             var user;
-            // if the impact area exists and matches the url
-            if (this.resultsLayer && ioArgs && (ioArgs.url === this.resultsLayer.url + '/0/applyEdits')) {
+            // if url contains applyEdits
+            if(ioArgs && (ioArgs.url.indexOf("applyEdits") > -1)) {
                 if (this._portal) {
                     user = this._portal.getPortalUser();
                 }
@@ -377,8 +398,13 @@ function(
                                             this._error("Could not create service.");
                                             return;
                                         }
+                                        // created service id
+                                        this._serviceId = results.itemId;
                                         // set url information
                                         this._setFSInfo(results.serviceurl);
+                                        // share item with everyone
+                                        this._shareItem(results.itemId);
+                                        // update layer
                                         this._addDefinition(serviceFields).then(lang.hitch(this, function(results) {
                                             this._animateProgress(this._currentPercentage + 10, 'Schema Updated');
                                             // test for successul schema edit
@@ -463,8 +489,13 @@ function(
             var token = user.credential.token;
             var html = '';
             html += '<h2>Good News!</h2>';
-            html += '<p>Here&#39;s your layer: <a target="_blank" href="' + this.resultsLayer.url + '?token=' + token + '">Enriched Service</a>.</p>';
-            html += '<p><a target="_blank" href="' + this.config.sharinghost + '/home/webmap/viewer.html?url=' + encodeURIComponent(this.resultsLayer.url) + '">Open in ArcGIS</a>; share it; save it; voilà!</p>';
+            html += 'Here&#39;s your layer:';
+            html += '<ul>';
+            html += '<li><a target="_blank" href="' + this.resultsLayer.url + '">Open Enriched Service</a>.</li>';
+            html += '<li><a target="_blank" href="' + this.config.sharinghost + '/home/webmap/viewer.html?services=' + this._serviceId + '">Open in new webmap</a></li>';
+            html += '<li><a target="_blank" href="' + this.config.sharinghost + '/home/webmap/viewer.html?webmap=' + this.config.webmap + '&services=' + this._serviceId + '">Open in current webmap</a></li>';
+            html += '</ul>';
+            html += '<p>share it; save it; voilà!</p>';
             var node = dom.byId('serviceResult');
             if (node) {
                 node.innerHTML = html;
@@ -604,6 +635,11 @@ function(
             var token = user.credential.token;
             // Layer Name
             schemaJSON.layers[0].name = this.config.form_layer_name;
+            // schema layer extent
+            schemaJSON.layers[0].extent = this.map.extent;
+            // scale
+            schemaJSON.layers[0].minScale = this.impactLayer.minScale;
+            schemaJSON.layers[0].maxScale = this.impactLayer.maxScale;
             // add impact layer fields to schema
             schemaJSON.layers[0].fields = schemaJSON.layers[0].fields.concat(this._formatFields(fields));
             console.log('fields', schemaJSON.layers[0].fields);
