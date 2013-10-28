@@ -51,7 +51,7 @@ define([], function() {
                 "labelingInfo": null
             },
             "allowGeometryUpdates": true,
-            "hasAttachments": true,
+            "hasAttachments": false,
             "htmlPopupType": "esriServerHTMLPopupTypeNone",
             "hasM": false,
             "hasZ": false,

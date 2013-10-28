@@ -13,9 +13,6 @@ define([], function() {
         "proxyurl": "resources/proxy.php",
         "dataCollections": ["KeyUSFacts", "Policy"],
         "analysisVariables":["KeyUSFacts.TOTPOP_CY", "KeyUSFacts.TOTHH_CY", "Policy.POP15_CY", "Policy.POP65U_CY", "KeyUSFacts.OWNER_CY", "KeyUSFacts.RENTER_CY"],
-        "default_title":"impact_area",
-        "form_service_name": "impact_area" + new Date().getTime(),
-        "form_layer_name":"impact_area",
         "geoenrichurl": location.protocol + "//" + "geoenrich.arcgis.com/arcgis/rest/services/World/geoenrichmentserver/GeoEnrichment",
         "gpurl": location.protocol + "//" + "limgp:6080/arcgis/rest/services/MultiPolyEnrich/GPServer/Multiple%20Polygon%20Enrich",
         //Example of a template specific property. If your template had several color schemes

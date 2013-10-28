@@ -8,7 +8,6 @@ define([
     "esri/arcgis/Portal",
     "dojo/on",
     "esri/tasks/query",
-    "esri/graphic",
     "esri/request",
     "dijit/Dialog",
     "dojo/dom-construct",
@@ -38,7 +37,6 @@ function(
     esriPortal,
     on,
     Query,
-    Graphic,
     esriRequest,
     Dialog,
     domConstruct,
@@ -91,9 +89,14 @@ function(
                 }));
             }));
         },
-        _slug: function(Text) {
-            return Text.toLowerCase().replace(/[^\w ]+/g,'').replace(/ +/g,'_');
-        },
+        _slug: function(value) {
+            // Trim start
+            // Trim end
+            // Camel case is bad
+            // Exchange invalid chars
+            // Swap whitespace for single character
+            return value.replace(/^\s\s*/, '').replace(/\s\s*$/, '').toLowerCase().replace(/[^a-z0-9_\-~!\+\s]+/g, '').replace(/[\s]+/g, '_');
+        },        
         _shareItem: function(itemId){
             var user = this._portal.getPortalUser();
             var token = user.credential.token;
@@ -297,22 +300,21 @@ function(
                 this._error('The impact layer did not load or was not found');
                 return;
             }
-            this.form_service_name = dom.byId('form_service_name');
-            this.config.form_service_name = this._slug(this.form_service_name.value);
-            if (!this.config.form_service_name) {
-                var d = new Date().getTime();
-                this.config.form_service_name = this.config.default_title + d;
-            }
-            this.form_layer_name = dom.byId('form_layer_name');
-            this.config.form_layer_name = this._slug(this.form_layer_name.value);
-            if (!this.config.form_layer_name) {
-                this.config.form_layer_name = this.config.default_title;
-            }
-            this.form_data_collections = dom.byId('form_data_collections');
-            this.config.dataCollections = this.form_data_collections.value.split(',');
-            if (!this.config.dataCollections || !this.config.dataCollections.length) {
-                this.config.dataCollections = ["Age", "HouseholdsByIncome"];
-            }
+            // service name
+            var d = new Date().getTime();
+            var serviceName = this.impactLayer.name || "Impact Service";
+            serviceName += '_';
+            serviceName += d;
+            this.config.form_service_name = this._slug(serviceName);
+            // layer name
+            var layerName = 'Impact Layer';
+            this.config.form_layer_name = this._slug(layerName);
+            // geoenrich variables
+            var dataCollections = dom.byId('form_data_collections');
+            var dcArray = dataCollections.value.split(',');
+            if (dcArray || dcArray.length) {
+                this.config.dataCollections = dcArray;
+            } 
             domClass.remove(dom.byId('progress_bar'), 'error');
             domClass.remove(dom.byId('progress_bar'), 'warning');
             domStyle.set(dom.byId('progress'), 'display', 'block');
@@ -485,8 +487,6 @@ function(
             return currentFields.concat(unique);
         },
         _success: function() {
-            var user = this._portal.getPortalUser();
-            var token = user.credential.token;
             var html = '';
             html += '<h2>Good News!</h2>';
             html += 'Here&#39;s your layer:';
@@ -527,16 +527,8 @@ function(
                 html += '</li>';
             }
             html += '<li>';
-            html += '<label class="leftLabel" for="form_service_name">Result Service Name:</label>';
-            html += '<input type="text" id="form_service_name" value="' + this.config.form_service_name + '" />';
-            html += '</li>';
-            html += '<li>';
-            html += '<label class="leftLabel" for="form_layer_name">Result Layer Name:</label>';
-            html += '<input type="text" id="form_layer_name" value="' + this.config.form_layer_name + '" />';
-            html += '</li>';
-            html += '<li>';
             html += '<label class="leftLabel" for="form_data_collections">Data Collections:</label>';
-            html += '<input type="text" id="form_data_collections" value="' + this.config.dataCollections.join() + '" />';
+            html += '<textarea id="form_data_collections">' + this.config.dataCollections.join() + '</textarea>';
             html += '<div><a id="showDataCollections">Show collections</a></div>';
             html += '</li>';
             html += '<li>';

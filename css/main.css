@@ -30,6 +30,11 @@ html,body {
 	display:none;
 }
 
+#form_data_collections{
+    width:175px;
+    max-width: 175px;
+}
+
 #mapDiv {
 	display:none;
 	height:100%;
