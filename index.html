@@ -6,8 +6,8 @@
 <!--Define the versions of IE that will be used to render the page. See Microsoft documentation for details. Optional.-->
 <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1" />
 <!--Use protocol relative urls that way if the browser is viewing the page via HTTPS the js/css file will be requested using the HTTPS protocol-->
-<link rel="stylesheet" href="//js.arcgis.com/3.6/js/dojo/dijit/themes/claro/claro.css">
-<link rel="stylesheet" type="text/css" href="//js.arcgis.com/3.6/js/esri/css/esri.css">
+<link rel="stylesheet" href="//js.arcgis.com/3.9/js/dojo/dijit/themes/claro/claro.css">
+<link rel="stylesheet" type="text/css" href="//js.arcgis.com/3.9/js/esri/css/esri.css">
 <!--Load any application specific styles-->
 <link rel="stylesheet" type="text/css" href="css/main.css">
 <link rel="stylesheet" type="text/css" href="css/ui-progress-bar.css">
@@ -68,34 +68,44 @@ filter: none;
         </div>
     </div>
     <script type="text/javascript">
-	        var dojoConfig = {
-	            packages:[
-	            { 
-	                name: "application",
-	                location: location.pathname.replace(/\/[^/]+$/, '') + '/js' 
-	             },{
-                    name: "config",
-                    location: location.pathname.replace(/\/[^/]+$/, '') + '/config'                     
-                 }
-	            ]
-	        };
+        var package_path = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
+        var dojoConfig = {
+            // The locationPath logic below may look confusing but all its doing is 
+            // enabling us to load the api from a CDN and load local modules from the correct location.
+            packages: [{
+                name: "application",
+                location: package_path + '/js'
+            }, {
+                name: "config",
+                location: package_path + '/config'
+            }, {
+                name: "arcgis_templates",
+                location: package_path + '/..'
+            }]
+        };
     </script>
-    <script type="text/javascript" src="//js.arcgis.com/3.6/"></script>
+    <script type="text/javascript" src="//js.arcgis.com/3.9/"></script>
     <script type="text/javascript">
         require([
-            "dojo/on",
-            "application/main",
             "application/template",
-            "dojo/domReady!"
+            "application/main"
         ], function(
-            on,
-            Main,
-            Template
+            Template,
+            Main
         ){
-        var supportsLocalization = true;
-        var myTemplate = new Template(supportsLocalization);
-        on(myTemplate, "ready", function(config){
-            Main(config);
+            // create the template. This will take care of all the logic required for template applications 
+            var myTemplate = new Template();
+            // create my main application. Start placing your logic in the main.js file.
+            var myApp = new Main();
+            // start template
+            myTemplate.startup().then(function(config) {
+                // The config object contains the following properties: helper services, (optionally) 
+                // i18n, appid, webmap and any custom values defined by the application. 
+                // In this example we have one called theme. 
+                myApp.startup(config);
+            }, function(error) {
+                // something went wrong. Let's report it.
+                myApp.reportError(error);
             });
         });
     </script>
