@@ -417,7 +417,7 @@ define([
                 html += '<li><a target="_blank" href="' + this.resultsLayer.url + '">Open Enriched Service</a>.</li>';
                 html += '<li><a target="_blank" href="' + this.config.sharinghost + '/home/webmap/viewer.html?services=' + this._serviceId + '">Open in new webmap</a></li>';
                 html += '<li><a target="_blank" href="' + this.config.sharinghost + '/home/webmap/viewer.html?webmap=' + this.config.webmap + '&services=' + this._serviceId + '">Open in current webmap</a></li>';
-                 html += '<li><a target="_blank" href="' + this.config.sharinghost + '/home/item.html?id=' + this._serviceId + '">Open Item Page</a></li>';
+                html += '<li><a target="_blank" href="' + this.config.sharinghost + '/home/item.html?id=' + this._serviceId + '">Open Item Page</a></li>';
                 html += '</ul>';
                 html += '<p>share it; save it; voilà!</p>';
                 var node = dom.byId('serviceResult');
