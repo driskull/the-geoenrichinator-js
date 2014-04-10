@@ -17,5 +17,28 @@ define({
     //color theme.  
     "theme": "", 
     "bingmapskey": "", //Enter the url to your organizations bing maps key if you want to use bing basemaps
-    "sharinghost": location.protocol + "//disasterresponse.maps.arcgis.com" //Defaults to arcgis.com. Set this value to your portal or organization host name. 
+    "sharinghost": location.protocol + "//disasterresponse.maps.arcgis.com", //Defaults to arcgis.com. Set this value to your portal or organization host name. 
+    //default values for any items you need using the helper services and units properties. 
+    "queryForOrg": false,
+    // This template is localized. Keep true.
+    "localize": false,
+    // custom URL parameters for this template
+    "urlItems": [
+        "sharinghost"
+    ],
+    "units": null,
+    "helperServices": {
+        "geometry": {
+            "url": null
+        },
+        "printTask": {
+            "url": null
+        },
+        "elevationSync": {
+            "url": null
+        },
+        "geocode": [{
+            "url": null
+           }]
+    }
 });

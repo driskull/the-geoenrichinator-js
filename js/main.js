@@ -22,7 +22,8 @@ define([
     "esri/layers/FeatureLayer",
     "esri/InfoTemplate",
     "dojo/dom-attr",
-    "esri/tasks/Geoprocessor"
+    "esri/tasks/Geoprocessor",
+    "application/template"
 ],
     function (
         ready,
@@ -47,49 +48,45 @@ define([
         FeatureLayer,
         InfoTemplate,
         domAttr,
-        Geoprocessor
+        Geoprocessor,
+        Template
     ) {
         return declare("", null, {
             config: {},
-            startup: function (config) {
-                // config will contain application and user defined info for the template such as i18n strings, the web map id
-                // and application id
-                // any url parameters and any application specific configuration information.
-                if (config) {
-                    //config will contain application and user defined info for the template such as i18n strings, the web map id
-                    // and application id
-                    // any url parameters and any application specific configuration information. 
-                    this.config = config;
-                    // set starting percentage
-                    this._currentPercentage = 30;
-                    // start containers
-                    this._containers();
-                    if (!this.config.theme) {
-                        // theme classes
-                        this.themes = ['theme1', 'theme2', 'theme3'];
-                        // random number 1-3;
-                        var rn = Math.floor(Math.random() * this.themes.length);
-                        this.config.theme = this.themes[rn];
-                    }
-                    // add random class
-                    domClass.add(document.body, 'appReady ' + this.config.theme);
-                    this._setFormValues();
-                    // once ready
-                    ready(lang.hitch(this, function () {
-                        // on window resize
-                        on(window, 'resize', lang.hitch(this, function () {
-                            var pb = domGeom.getMarginBox(dom.byId('progress_bar')).w;
-                            var nw = pb * (this._currentPercentage / 100);
-                            domStyle.set(dom.byId('progressWidth'), 'width', nw + "px");
-                        }));
-                        on(dom.byId('start'), 'click', lang.hitch(this, function () {
-                            this._start();
-                        }));
-                    }));
-                } else {
-                    var error = new Error("Main:: Config is not defined");
-                    this.reportError(error);
+            startup: function () {
+                this._template = new Template();
+                // get params
+                var customItems = this._template._createUrlParamsObject(this._template.config.urlItems);
+                var paramItems = ["webmap", "appid", "group", "oauthappid"];
+                var defaultItems = this._template._createUrlParamsObject(paramItems);
+                // mixin url params and config
+                lang.mixin(this.config, this._template.config, customItems, defaultItems);
+                // set starting percentage
+                this._currentPercentage = 0;
+                // start containers
+                this._containers();
+                if (!this.config.theme) {
+                    // theme classes
+                    this.themes = ['theme1', 'theme2', 'theme3'];
+                    // random number 1-3;
+                    var rn = Math.floor(Math.random() * this.themes.length);
+                    this.config.theme = this.themes[rn];
                 }
+                // add random class
+                domClass.add(document.body, 'appReady ' + this.config.theme);
+                this._setFormValues();
+                // once ready
+                ready(lang.hitch(this, function () {
+                    // on window resize
+                    on(window, 'resize', lang.hitch(this, function () {
+                        var pb = domGeom.getMarginBox(dom.byId('progress_bar')).w;
+                        var nw = pb * (this._currentPercentage / 100);
+                        domStyle.set(dom.byId('progressWidth'), 'width', nw + "px");
+                    }));
+                    on(dom.byId('start'), 'click', lang.hitch(this, function () {
+                        this._start();
+                    }));
+                }));
             },
             reportError: function (error) {
                 // remove loading class from body
@@ -100,14 +97,8 @@ define([
                 // for localization. If you don't need to support multiple languages you can hardcode the
                 // strings here and comment out the call in index.html to get the localization strings.
                 // set message
-                var node = dom.byId("loading_message");
-                if (node) {
-                    if (this.config && this.config.i18n) {
-                        node.innerHTML = this.config.i18n.map.error + ": " + error.message;
-                    } else {
-                        node.innerHTML = "Unable to create map: " + error.message;
-                    }
-                }
+                console.log(error);
+                alert(error.message);
             },
             _slug: function (value) {
                 // Trim start
@@ -160,12 +151,26 @@ define([
             _start: function () {
                 this._getFormValues();
                 this._createDialog();
+                // update cfg
+                var cfg = lang.mixin(this._template.config, this.config);
+                this.config = cfg;
+                // create portal
                 this._portal = new esriPortal.Portal(this.config.sharinghost);
                 connect.connect(this._portal, 'onLoad', lang.hitch(this, function () {
                     this._portal.signIn().then(lang.hitch(this, function () {
-                        domClass.add(document.body, 'loggedIn');
-                        this._bc.layout();
-                        this._createWebMap();
+                        // start template
+                        this._template.startup().then(lang.hitch(this, function(config) {
+                            this.config = config;
+                            // The config object contains the following properties: helper services, (optionally) 
+                            // i18n, appid, webmap and any custom values defined by the application. 
+                            // In this example we have one called theme. 
+                            domClass.add(document.body, 'loggedIn');
+                            this._bc.layout();
+                            this._createWebMap();
+                        }), lang.hitch(this,function(error) {
+                            // something went wrong. Let's report it.
+                            this.reportError(error);
+                        }));
                     }), lang.hitch(this, function (error) {
                         this._error("You must log in. " + JSON.stringify(error));
                     }));
