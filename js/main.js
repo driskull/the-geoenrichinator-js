@@ -232,26 +232,6 @@ define([
                 this._message.startup();
             },
             _runCustomGP: function (featureSet) {
-                var feats = [];
-                if (featureSet && featureSet.features && featureSet.features.length) {
-                    for (var i = 0; i < featureSet.features.length; i++) {
-                        var feat = featureSet.features[i];
-                        feats.push({
-                            attributes: {},
-                            geometry: {
-                                rings: feat.geometry.rings
-                            }
-                        });
-                    }
-                }
-                var formatted = {
-                    features: feats,
-                    fields: [],
-                    geometryType: featureSet.geometryType,
-                    spatialReference: {
-                        wkid: featureSet.spatialReference.wkid
-                    }
-                };
                 var def = new Deferred();
                 // spatial reference
                 var wkid = this.map.extent.spatialReference.wkid;
@@ -259,12 +239,12 @@ define([
                 this._customGP = new Geoprocessor(this.config.gpurl);
                 // settings
                 var params = {
-                    "Impact_Area": JSON.stringify(formatted),
+                    "Impact_Area": featureSet,
                     "processSR": wkid,
                     "outSR": wkid
                 };
                 // submit enrichment
-                this._customGP.execute(params, def.resolve, def.reject);
+                this._customGP.submitJob(params, def.resolve, def.progress, def.reject);
                 // return deferred
                 return def.promise;
             },
@@ -318,6 +298,8 @@ define([
                         }
                         // if where specified
                         query.where = "1=1";
+                        // all fields
+                        query.outFields = ["*"];
                         // make sure I get them back in my spatial reference
                         query.outSpatialReference = this.map.extent.spatialReference;
                         // animate
@@ -331,63 +313,65 @@ define([
                                     // update progress
                                     this._animateProgress(this._currentPercentage + 20, 'Getting Business & Infrastructure Data').then(lang.hitch(this, function () {
                                         // GP task
-                                        this._runCustomGP(fs).then(lang.hitch(this, function (gpResults) {
-                                            // got GP Results
-                                            console.log("GP Results", gpResults);
-                                            // get gp results features and fields
-                                            var gpValue = gpResults[0].value;
-                                            // set geometry type
-                                            gpValue.geometryType = fs.geometryType;
-                                            // set all geometries that we already have
-                                            for (var i = 0; i < gpValue.features.length; i++) {
-                                                gpValue.features[i].geometry = fs.features[i].geometry;
-                                            }
-                                            // update status when GP done
-                                            this._animateProgress(this._currentPercentage + 10, 'Enriching Data').then(lang.hitch(this, function () {
-                                                // enrich layer and create service
-                                                this._enrichLayer(gpValue).then(lang.hitch(this, function (layerResponse) {
-                                                    // got layer enrichment
-                                                    console.log("Layer Enrich", layerResponse);
-                                                    this._animateProgress(this._currentPercentage + 10, 'Getting Layer result').then(lang.hitch(this, function () {
-                                                        this._getEnrichResult(layerResponse).then(lang.hitch(this, function (resultsResponse) {
-                                                            // got features
-                                                            console.log("Layer Enrich Result", resultsResponse);
-                                                            this._resultsUrl = resultsResponse.value.url;
-                                                            this._serviceId = resultsResponse.value.itemId;
-                                                            // animate
-                                                            this._animateProgress(this._currentPercentage + 10, 'Sharing Layer').then(lang.hitch(this, function () {
-                                                                // add new layer
-                                                                this._shareItem(resultsResponse.value.itemId).then(lang.hitch(this, function () {
-                                                                    this._createResultsLayer();
-                                                                    this.map.addLayer(this.resultsLayer);
-                                                                    this.impactLayer.hide();
-                                                                    this.resultsLayer.show();
-                                                                    this._success();
-                                                                    this._animateProgress(100, 'Success');
-                                                                    return true;
+                                        this._runCustomGP(fs).then(lang.hitch(this, function (gpResponse) {
+                                            console.log("GP Response", gpResponse);
+                                            this._animateProgress(this._currentPercentage + 10, 'Getting Custom GP result').then(lang.hitch(this, function () {
+                                                this._getCustomGPResult(gpResponse).then(lang.hitch(this, function(gpResults){
+                                                    // got GP Results
+                                                    console.log("GP Results", gpResults);
+                                                    // get gp results features and fields
+                                                    var gpValue = gpResults.value;
+                                                    // update status when GP done
+                                                    this._animateProgress(this._currentPercentage + 10, 'Enriching Data').then(lang.hitch(this, function () {
+                                                        // enrich layer and create service
+                                                        this._enrichLayer(gpValue).then(lang.hitch(this, function (layerResponse) {
+                                                            // got layer enrichment
+                                                            console.log("Layer Enrich", layerResponse);
+                                                            this._animateProgress(this._currentPercentage + 10, 'Getting Layer result').then(lang.hitch(this, function () {
+                                                                this._getEnrichResult(layerResponse).then(lang.hitch(this, function (resultsResponse) {
+                                                                    // got features
+                                                                    console.log("Layer Enrich Result", resultsResponse);
+                                                                    this._resultsUrl = resultsResponse.value.url;
+                                                                    this._serviceId = resultsResponse.value.itemId;
+                                                                    // animate
+                                                                    this._animateProgress(this._currentPercentage + 10, 'Sharing Layer').then(lang.hitch(this, function () {
+                                                                        // add new layer
+                                                                        this._shareItem(resultsResponse.value.itemId).then(lang.hitch(this, function () {
+                                                                            this._createResultsLayer();
+                                                                            this.map.addLayer(this.resultsLayer);
+                                                                            this.impactLayer.hide();
+                                                                            this.resultsLayer.show();
+                                                                            this._success();
+                                                                            this._animateProgress(100, 'Success');
+                                                                            return true;
+                                                                        }), lang.hitch(this, function (error) {
+                                                                            this._error("Sharging service failed. " + JSON.stringify(error));
+                                                                            return error;
+                                                                        }));
+                                                                    }));
                                                                 }), lang.hitch(this, function (error) {
-                                                                    this._error("Sharging service failed. " + JSON.stringify(error));
+                                                                    this._error("Enrich failed. " + JSON.stringify(error));
                                                                     return error;
                                                                 }));
                                                             }));
                                                         }), lang.hitch(this, function (error) {
                                                             this._error("Enrich failed. " + JSON.stringify(error));
                                                             return error;
+                                                        }), lang.hitch(this, function (update) {
+                                                            // if job failed
+                                                            if (update.jobStatus === "esriJobFailed") {
+                                                                this._error("Enrich failed. " + JSON.stringify(update.messages[0].description));
+                                                                var error = new Error(update.messages[0].description);
+                                                                return error;
+                                                            }
+                                                            else{
+                                                                this._animateProgress(this._currentPercentage, 'Enriching - Job Executing');
+                                                            }
                                                         }));
                                                     }));
                                                 }), lang.hitch(this, function (error) {
-                                                    this._error("Enrich failed. " + JSON.stringify(error));
+                                                    this._error("GP failed. " + JSON.stringify(error));
                                                     return error;
-                                                }), lang.hitch(this, function (update) {
-                                                    // if job failed
-                                                    if (update.jobStatus === "esriJobFailed") {
-                                                        this._error("Enrich failed. " + JSON.stringify(update.messages[0].description));
-                                                        var error = new Error(update.messages[0].description);
-                                                        return error;
-                                                    }
-                                                    else{
-                                                        this._animateProgress(this._currentPercentage, 'Enriching - Job Executing');
-                                                    }
                                                 }));
                                             }));
                                         }), lang.hitch(this, function (error) {
@@ -413,6 +397,16 @@ define([
                 var parameterName = 'enrichedLayer';
                 // get result data
                 this._enrichGP.getResultData(jobId, parameterName, def.resolve, def.reject);
+                return def.promise;
+            },
+            _getCustomGPResult: function (response) {
+                var def = new Deferred();
+                // get job id
+                var jobId = response.jobId;
+                // get param
+                var parameterName = 'Output_JSON_String';
+                // get result data
+                this._customGP.getResultData(jobId, parameterName, def.resolve, def.reject);
                 return def.promise;
             },
             _success: function () {
