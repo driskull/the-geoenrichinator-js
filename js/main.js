@@ -259,6 +259,11 @@ define([
                     infoTemplate: new InfoTemplate("Attributes", "${*}"),
                     outFields: ["*"]
                 });
+                if(this.resultsLayer){
+                    this.map.addLayer(this.resultsLayer);   
+                }
+                this.impactLayer.hide();
+                this.resultsLayer.show();
             },
             _feed: function () {
                 // get layer id
@@ -343,9 +348,6 @@ define([
                                                                         // add new layer
                                                                         this._shareItem(resultsResponse.value.itemId).then(lang.hitch(this, function () {
                                                                             this._createResultsLayer();
-                                                                            this.map.addLayer(this.resultsLayer);
-                                                                            this.impactLayer.hide();
-                                                                            this.resultsLayer.show();
                                                                             this._success();
                                                                             this._animateProgress(100, 'Success');
                                                                             return true;
@@ -370,7 +372,7 @@ define([
                                                                 return error;
                                                             }
                                                             else{
-                                                                this._animateProgress(this._currentPercentage, 'Enriching - Job Executing');
+                                                                this._animateLabel('Enriching - Job Executing');
                                                             }
                                                         }));
                                                     }));
@@ -382,6 +384,16 @@ define([
                                         }), lang.hitch(this, function (error) {
                                             this._error("GP failed. " + JSON.stringify(error));
                                             return error;
+                                        }), lang.hitch(this, function (update) {
+                                            // if job failed
+                                            if (update.jobStatus === "esriJobFailed") {
+                                                this._error("GP failed. " + JSON.stringify(update.messages[0].description));
+                                                var error = new Error(update.messages[0].description);
+                                                return error;
+                                            }
+                                            else{
+                                                this._animateLabel('GP - Job Executing');
+                                            }
                                         }));
                                     }));
                                 } else {
